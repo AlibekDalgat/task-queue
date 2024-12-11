@@ -29,7 +29,10 @@ func (s *TaskService) generateTaskID() uint32 {
 	return atomic.AddUint32(&s.idCounter, 1)
 }
 
-func (s *TaskService) Create(input string) uint32 {
+func (s *TaskService) Create(input string) (uint32, error) {
+	if !models.InputValid(input) {
+		return 0, fmt.Errorf("Неверное содержание ввода: %s", input)
+	}
 	id := s.generateTaskID()
 	task := &models.Task{
 		ID:        id,
@@ -41,9 +44,8 @@ func (s *TaskService) Create(input string) uint32 {
 	s.mutex.Unlock()
 
 	s.queue <- task
-	logrus.Infof("task created, id: %d", id)
-	fmt.Println("aueeeee: ", s.currentTasks)
-	return id
+	logrus.Infof("Задача создана, id: %d", id)
+	return id, nil
 }
 
 func (s *TaskService) Get(id uint32) (models.Task, error) {
@@ -51,19 +53,22 @@ func (s *TaskService) Get(id uint32) (models.Task, error) {
 	defer s.mutex.RUnlock()
 	task, ok := s.currentTasks[id]
 	if !ok {
+		logrus.Warnf("Не существует задачи, id: %d", id)
 		return models.Task{}, fmt.Errorf("Задача с id %d не найдена", id)
 	}
-	logrus.Infof("task gotted, id: %d", id)
+	logrus.Infof("Задача получена, id: %d", id)
 	return *task, nil
 }
 
 func (s *TaskService) StartProcessing() {
 	for task := range s.queue {
-		time.Sleep(2 * time.Second)
-		s.mutex.Lock()
-		task.Status = "completed"
-		task.Result = fmt.Sprintf("Результат: %s", task.InputData)
-		s.mutex.Unlock()
-		logrus.Infof("task completed, id: %d", task.ID)
+		go func(task *models.Task) {
+			time.Sleep(3 * time.Second)
+			s.mutex.Lock()
+			task.Status = "completed"
+			task.Result = fmt.Sprintf("Результат: %s", task.InputData)
+			s.mutex.Unlock()
+			logrus.Infof("Задача завершена, id: %d", task.ID)
+		}(task)
 	}
 }

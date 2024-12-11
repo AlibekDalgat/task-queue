@@ -10,10 +10,14 @@ import (
 func (h *Handler) createTask(c *gin.Context) {
 	var input models.Task
 	if err := c.ShouldBindJSON(&input); err != nil {
-		newErrorResponse(c, http.StatusBadRequest, "неверное содержание json")
+		newErrorResponse(c, http.StatusBadRequest, "Неверное содержание json")
 		return
 	}
-	id := h.services.Create(input.InputData)
+	id, err := h.services.Create(input.InputData)
+	if err != nil {
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
 	c.JSON(http.StatusOK, createResponse{TaskID: id})
 }
 

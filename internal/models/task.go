@@ -6,3 +6,10 @@ type Task struct {
 	Status    string `json:"status"`
 	Result    string `json:"result"`
 }
+
+func InputValid(inputData string) bool {
+	if inputData == "" {
+		return false
+	}
+	return true
+}
