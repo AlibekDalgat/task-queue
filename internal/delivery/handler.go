@@ -18,7 +18,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	api := router.Group("/tasks")
 	{
 		api.POST("", h.createTask)
-		api.GET(":id", h.getTask)
+		api.GET(":idParam", h.getTask)
 	}
 	return router
 }
